@@ -5,7 +5,7 @@ const {
     createPermission
 } = require('../controllers/permission.controller');
 
-router.get('/permissions', authenticate, getAllPermissions);
-router.post('/permissions', authenticate, createPermission);
+router.get('/', authenticate, getAllPermissions);
+router.post('/', authenticate, createPermission);
 
 module.exports = router;

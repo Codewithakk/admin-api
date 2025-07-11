@@ -7,9 +7,9 @@ const {
     getRolePermissions
 } = require('../controllers/role.controller');
 
-router.get('/roles', authenticate, getAllRoles);
-router.post('/roles', authenticate, createRole);
-router.post('/roles/:id/permissions', authenticate, assignPermissions);
-router.get('/roles/:id/permissions', authenticate, getRolePermissions);
+router.get('/', authenticate, getAllRoles);
+router.post('/', authenticate, createRole);
+router.post('/:id/permissions', authenticate, assignPermissions);
+router.get('/:id/permissions', authenticate, getRolePermissions);
 
 module.exports = router;

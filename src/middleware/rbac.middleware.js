@@ -1,16 +1,26 @@
-exports.authorizeRoleOrPermission = (roleName, permissionName) => {
+exports.authorize = (requiredPermissions = []) => {
     return (req, res, next) => {
-        const user = req.user;
+        try {
+            const user = req.user;
 
-        const hasRole = user.roles.some((role) => role.name === roleName);
-        const hasPermission = user.roles.some((role) =>
-            role.permissions.some((perm) => perm.name === permissionName)
-        );
+            // Check if user has admin role
+            const isAdmin = user.roles.some(role => role.name === 'admin');
+            if (isAdmin) return next();
 
-        if (hasRole || hasPermission) {
+            // Check for required permissions
+            const userPermissions = user.roles.reduce((perms, role) => {
+                return perms.concat(role.permissions.map(p => p.name));
+            }, []);
+
+            const hasPermission = requiredPermissions.every(perm =>
+                userPermissions.includes(perm)
+            );
+
+            if (!hasPermission) throw new Error();
+
             next();
-        } else {
-            return res.status(403).json({ message: 'Forbidden' });
+        } catch (error) {
+            res.status(403).json({ message: 'Forbidden - Insufficient permissions' });
         }
     };
 };
