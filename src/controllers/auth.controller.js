@@ -1,26 +1,39 @@
-const authService = require('../services/authService');
-const { validateRegister, validateLogin } = require('../utils/validators');
+const User = require('../models/User');
+const { generateToken } = require('../utils/jwt');
+const successResponse = require('../utils/sucessResponse');
+const errorResponse = require('../utils/errorResponse');
+const asyncHandler = require('../utils/asyncHandler');
 
-exports.register = async (req, res) => {
-    try {
-        const { error } = validateRegister(req.body);
-        if (error) return res.status(400).json({ message: error.details[0].message });
-
-        const user = await authService.registerUser(req.body);
-        res.status(201).json({ message: 'User created successfully', user });
-    } catch (error) {
-        res.status(400).json({ message: error.message });
+exports.register = asyncHandler(async (req, res, next) => {
+    const { name, email, password } = req.body;
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+        return errorResponse(res, 400, 'Email already in use');
     }
-};
 
-exports.login = async (req, res) => {
-    try {
-        const { error } = validateLogin(req.body);
-        if (error) return res.status(400).json({ message: error.details[0].message });
+    // Create user
+    const user = await User.create({ name, email, password });
 
-        const { user, token } = await authService.loginUser(req.body);
-        res.json({ message: 'Login successful', user, token });
-    } catch (error) {
-        res.status(400).json({ message: error.message });
+    // Generate token
+    const token = generateToken(user._id);
+
+    return successResponse(res, 201, 'User registered successfully', { user, token });
+});
+
+exports.login = asyncHandler(async (req, res, next) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return errorResponse(res, 400, 'Please provide email and password');
     }
-};
+
+    const user = await User.findOne({ email }).select('+password');
+
+    if (!user || !(await user.comparePassword(password))) {
+        return errorResponse(res, 401, 'Incorrect email or password');
+    }
+
+    const token = generateToken(user._id);
+
+    return successResponse(res, 200, 'User logged in successfully', { user, token });
+});

@@ -1,15 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/user.controller');
-const { authenticate, authorize } = require('../middleware/auth.middleware');
+const { protect } = require('../middleware/auth.middleware');
+const validators = require('../utils/validators');
+const { checkPermissions } = require('../middleware/rbac.middleware');
 
-router.use(authenticate);
+router.use(protect);
 
-router.get('/', authorize(['view_users']), userController.getAllUsers);
-router.post('/', authorize(['create_users']), userController.createUser);
-router.get('/:id', authorize(['view_users']), userController.getUser);
-router.put('/:id', authorize(['edit_users']), userController.updateUser);
-router.delete('/:id', authorize(['delete_users']), userController.deleteUser);
-router.post('/:id/roles', authorize(['assign_roles']), userController.assignRoles);
+router.get('/', checkPermissions(['manage_users']), userController.getAllUsers);
+router.post('/', checkPermissions(['manage_users']), validators.validateCreateUser, userController.createUser);
+router.get('/:id', checkPermissions(['manage_users']), userController.getUser);
+router.put('/:id', checkPermissions(['manage_users']), validators.validateUpdateUser, userController.updateUser);
+router.delete('/:id', checkPermissions(['manage_users']), userController.deleteUser);
+router.post('/:id/roles', checkPermissions(['manage_users']), validators.validateAssignRoles, userController.assignRolesToUser);
 
 module.exports = router;

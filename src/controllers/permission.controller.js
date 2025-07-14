@@ -1,12 +1,22 @@
 const Permission = require('../models/Permission');
+const successResponse = require('../utils/sucessResponse');
+const errorResponse = require('../utils/errorResponse');
+const asyncHandler = require('../utils/asyncHandler');
 
-exports.getAllPermissions = async (req, res) => {
+exports.getAllPermissions = asyncHandler(async (req, res, next) => {
     const permissions = await Permission.find();
-    res.json(permissions);
-};
+    return successResponse(res, 200, 'Permissions fetched successfully', permissions);
+});
 
-exports.createPermission = async (req, res) => {
-    const permission = new Permission(req.body);
-    await permission.save();
-    res.json(permission);
-};
+exports.createPermission = asyncHandler(async (req, res, next) => {
+    const { name, description } = req.body;
+
+    const existingPermission = await Permission.findOne({ name });
+    if (existingPermission) {
+        return errorResponse(res, 400, 'Permission with this name already exists');
+    }
+
+    const permission = await Permission.create({ name, description });
+
+    return successResponse(res, 201, 'Permission created successfully', permission);
+});

@@ -1,49 +1,41 @@
 const express = require('express');
-const cors = require('cors');
 const morgan = require('morgan');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
+const cors = require('cors');
+const connectDB = require('./src/config/db');
+const routes = require('./src/routes/index');
 const authRoutes = require('./src/routes/auth.routes');
-const userRoutes = require('./src/routes/user.routes');
-const roleRoutes = require('./src/routes/role.routes');
-const permissionRoutes = require('./src/routes/permission.routes');
-const { notFound, errorHandler } = require('./src/middleware/errorMiddleware');
-const connectDB = require('./src/config/database');
-const seedDatabase = require('./src/utils/seedDatabase');
-const jwt = require('jsonwebtoken');
-const dotenv = require('dotenv');
+
+// Load env vars
+require('dotenv').config();
+
+// Create Express app
 const app = express();
+
+// Connect to MongoDB
 connectDB();
-app.use(express.json()); // For parsing application/json
-app.use(express.urlencoded({ extended: true })); // For parsing form data
-// Security middleware
-app.use(helmet());
+
+// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
 
-// Rate limiting
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100 // limit each IP to 100 requests per windowMs
-});
-app.use(limiter);
+// Mount routes
+app.use('/api/v1', routes);
+app.use('/api/v1/auth', authRoutes);
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/roles', roleRoutes);
-app.use('/api/permissions', permissionRoutes);
-
-// Error handling
-app.use(notFound);
-app.use(errorHandler);
-const PORT = process.env.PORT || 4000;
-
-seedDatabase().then(() => {
-    app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({
+        success: false,
+        message: 'Server Error',
     });
+});
+
+// Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
 
 module.exports = app;
